@@ -1,0 +1,895 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metric-Imperial Converter | Quantum Conversion Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --neon-cyan: #00f3ff;
+      --neon-purple: #bc13fe;
+      --neon-green: #0aff0a;
+      --dark-bg: #050505;
+      --glass: rgba(255, 255, 255, 0.03);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--dark-bg);
+      color: #fff;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    .custom-cursor {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--neon-cyan);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.1s, border-color 0.3s;
+      mix-blend-mode: difference;
+    }
+
+    .cursor-dot {
+      width: 4px;
+      height: 4px;
+      background: var(--neon-cyan);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    #canvas-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    .glass-panel {
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .neon-text {
+      text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+    }
+
+    .neon-border {
+      box-shadow: 0 0 10px var(--neon-cyan), inset 0 0 10px rgba(0, 243, 255, 0.1);
+    }
+
+    .input-glow:focus {
+      outline: none;
+      box-shadow: 0 0 20px var(--neon-cyan), inset 0 0 20px rgba(0, 243, 255, 0.1);
+    }
+
+    .unit-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+
+    .unit-card:hover {
+      transform: translateY(-5px) rotateX(5deg);
+      box-shadow: 0 20px 40px rgba(0, 243, 255, 0.2);
+    }
+
+    .converter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+    }
+
+    .scan-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      animation: scan 3s linear infinite;
+      opacity: 0.5;
+    }
+
+    @keyframes scan {
+      0% {
+        transform: translateY(0);
+      }
+
+      100% {
+        transform: translateY(100vh);
+      }
+    }
+
+    .glitch {
+      position: relative;
+    }
+
+    .glitch::before,
+    .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .glitch::before {
+      animation: glitch-1 0.3s infinite linear alternate-reverse;
+      color: var(--neon-purple);
+      z-index: -1;
+    }
+
+    .glitch::after {
+      animation: glitch-2 0.3s infinite linear alternate-reverse;
+      color: var(--neon-cyan);
+      z-index: -2;
+    }
+
+    @keyframes glitch-1 {
+
+      0%,
+      100% {
+        clip-path: inset(0 0 0 0);
+        transform: translate(0);
+      }
+
+      20% {
+        clip-path: inset(20% 0 30% 0);
+        transform: translate(-2px, 2px);
+      }
+
+      40% {
+        clip-path: inset(50% 0 20% 0);
+        transform: translate(2px, -2px);
+      }
+
+      60% {
+        clip-path: inset(10% 0 60% 0);
+        transform: translate(-2px, 0);
+      }
+
+      80% {
+        clip-path: inset(80% 0 5% 0);
+        transform: translate(2px, 2px);
+      }
+    }
+
+    @keyframes glitch-2 {
+
+      0%,
+      100% {
+        clip-path: inset(0 0 0 0);
+        transform: translate(0);
+      }
+
+      20% {
+        clip-path: inset(60% 0 10% 0);
+        transform: translate(2px, -2px);
+      }
+
+      40% {
+        clip-path: inset(30% 0 40% 0);
+        transform: translate(-2px, 2px);
+      }
+
+      60% {
+        clip-path: inset(10% 0 80% 0);
+        transform: translate(2px, 0);
+      }
+
+      80% {
+        clip-path: inset(40% 0 30% 0);
+        transform: translate(-2px, -2px);
+      }
+    }
+
+    .particle {
+      position: absolute;
+      pointer-events: none;
+      background: var(--neon-cyan);
+      border-radius: 50%;
+      animation: particle-float 3s ease-out forwards;
+    }
+
+    @keyframes particle-float {
+      0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0);
+        opacity: 0;
+      }
+    }
+
+    .result-pop {
+      animation: pop-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes pop-in {
+      0% {
+        transform: scale(0) rotate(-180deg);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+      }
+    }
+
+    .typewriter {
+      overflow: hidden;
+      border-right: 2px solid var(--neon-cyan);
+      white-space: nowrap;
+      animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+    }
+
+    @keyframes typing {
+      from {
+        width: 0
+      }
+
+      to {
+        width: 100%
+      }
+    }
+
+    @keyframes blink-caret {
+
+      from,
+      to {
+        border-color: transparent
+      }
+
+      50% {
+        border-color: var(--neon-cyan);
+      }
+    }
+
+    .hex-bg {
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l25.98 15v30L30 60 4.02 45V15z' fill-opacity='0.05' fill='%2300f3ff'/%3E%3C/svg%3E");
+      animation: hex-scroll 20s linear infinite;
+    }
+
+    @keyframes hex-scroll {
+      0% {
+        background-position: 0 0;
+      }
+
+      100% {
+        background-position: 60px 60px;
+      }
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .category-tabs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      cursor: none;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tab-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+      transition: left 0.5s;
+    }
+
+    .tab-btn:hover::before,
+    .tab-btn.active::before {
+      left: 100%;
+    }
+
+    .tab-btn.active {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+    }
+
+    .history-item {
+      animation: slide-in 0.3s ease-out;
+    }
+
+    @keyframes slide-in {
+      from {
+        transform: translateX(-20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .formula-display {
+      background: linear-gradient(135deg, rgba(0, 243, 255, 0.1), rgba(188, 19, 254, 0.1));
+      border-left: 3px solid var(--neon-cyan);
+    }
+  </style>
+</head>
+
+<body class="hex-bg">
+  <div class="custom-cursor" id="cursor"></div>
+  <div class="cursor-dot" id="cursor-dot"></div>
+  <div class="scan-line"></div>
+  <div id="canvas-container"></div>
+
+  <div class="min-h-screen relative z-10 p-4 md:p-8">
+    <header class="max-w-7xl mx-auto mb-12 text-center relative">
+      <div class="inline-block">
+        <h1 class="text-5xl md:text-7xl font-bold mb-4 glitch" data-text="QUANTUM CONVERTER">QUANTUM CONVERTER</h1>
+        <div class="h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent w-full"></div>
+      </div>
+      <p class="text-gray-400 mt-4 text-lg mono typewriter" style="animation-delay: 1s;">Metric-Imperial Translation Engine v2.0</p>
+    </header>
+
+    <main class="max-w-7xl mx-auto grid lg:grid-cols-3 gap-8">
+      <section class="lg:col-span-2 space-y-6">
+        <div class="glass-panel rounded-2xl p-8 neon-border relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500 rounded-full filter blur-3xl opacity-20 animate-pulse"></div>
+
+          <div class="category-tabs" id="categoryTabs">
+            <button class="tab-btn active rounded-lg mono text-sm" data-category="volume">VOLUME</button>
+            <button class="tab-btn rounded-lg mono text-sm" data-category="mass">MASS</button>
+            <button class="tab-btn rounded-lg mono text-sm" data-category="length">LENGTH</button>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-6 mb-6">
+            <div class="space-y-2">
+              <label class="text-cyan-400 text-xs mono uppercase tracking-wider">Input Value</label>
+              <div class="relative">
+                <input type="text" id="inputValue" placeholder="e.g., 10, 5.5, 3/4" class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-4 text-2xl mono input-glow transition-all text-white placeholder-gray-600">
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs mono">ANY FORMAT</div>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-cyan-400 text-xs mono uppercase tracking-wider">Unit</label>
+              <select id="inputUnit" class="w-full bg-black/50 border border-gray-700 rounded-lg px-4 py-4 text-xl mono input-glow transition-all text-white appearance-none cursor-none">
+                <option value="gal">Gallons (gal)</option>
+                <option value="L">Liters (L)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-center mb-6">
+            <button id="convertBtn" class="group relative px-8 py-4 bg-transparent overflow-hidden rounded-full">
+              <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-cyan-500 to-purple-600 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+              <div class="absolute inset-0 w-full h-full border border-cyan-400 rounded-full animate-pulse"></div>
+              <span class="relative z-10 mono font-bold tracking-widest group-hover:scale-110 transition-transform inline-block">INITIATE CONVERSION</span>
+            </button>
+          </div>
+
+          <div id="resultContainer" class="hidden">
+            <div class="glass-panel rounded-xl p-6 border border-cyan-500/30 result-pop">
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-gray-400 mono text-xs">CONVERSION RESULT</span>
+                <div class="flex gap-2">
+                  <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                  <span class="text-green-400 mono text-xs">SUCCESS</span>
+                </div>
+              </div>
+
+              <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <div class="formula-display p-4 rounded-lg">
+                  <div class="text-gray-400 text-xs mono mb-1">INPUT</div>
+                  <div class="text-2xl font-bold" id="resultInit"></div>
+                </div>
+                <div class="formula-display p-4 rounded-lg border-l-purple-500">
+                  <div class="text-gray-400 text-xs mono mb-1">OUTPUT</div>
+                  <div class="text-2xl font-bold text-cyan-400" id="resultOutput"></div>
+                </div>
+              </div>
+
+              <div class="bg-black/30 p-4 rounded-lg mono text-sm text-gray-300" id="resultString"></div>
+
+              <div class="mt-4 flex gap-2">
+                <button onclick="copyResult()" class="px-4 py-2 bg-cyan-500/20 border border-cyan-500/50 rounded hover:bg-cyan-500/30 transition-colors mono text-xs">
+                  COPY JSON
+                </button>
+                <button onclick="saveToHistory()" class="px-4 py-2 bg-purple-500/20 border border-purple-500/50 rounded hover:bg-purple-500/30 transition-colors mono text-xs">
+                  SAVE TO LOG
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div id="errorContainer" class="hidden mt-4 p-4 bg-red-500/10 border border-red-500/50 rounded-lg">
+            <div class="flex items-center gap-2 text-red-400 mono text-sm">
+              <span class="text-xl">⚠</span>
+              <span id="errorText"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6">
+          <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+            Conversion Matrix
+          </h3>
+          <div class="converter-grid" id="quickConversions">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </section>
+
+      <aside class="space-y-6">
+        <div class="glass-panel rounded-2xl p-6 h-96 overflow-hidden flex flex-col">
+          <h3 class="text-lg font-bold mb-4 mono text-cyan-400">TRANSACTION LOG</h3>
+          <div id="historyList" class="flex-1 overflow-y-auto space-y-2 mono text-sm">
+            <div class="text-gray-500 text-center py-8 italic">No conversions recorded</div>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6">
+          <h3 class="text-lg font-bold mb-4 text-purple-400">API ENDPOINT</h3>
+          <div class="bg-black/50 p-4 rounded-lg mono text-xs overflow-x-auto">
+            <div class="text-gray-400 mb-2">GET /api/convert</div>
+            <div class="text-cyan-400">?input=10L</div>
+          </div>
+          <div class="mt-4 space-y-2 text-xs mono text-gray-400">
+            <div class="flex justify-between">
+              <span>Status:</span>
+              <span class="text-green-400">OPERATIONAL</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Latency:</span>
+              <span class="text-cyan-400" id="latency">12ms</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Uptime:</span>
+              <span class="text-cyan-400">99.9%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10"></div>
+          <h3 class="text-lg font-bold mb-2 relative z-10">Supported Formats</h3>
+          <ul class="space-y-2 text-sm relative z-10">
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full"></span>
+              <span class="mono">Integers: <span class="text-cyan-400">42</span></span>
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full"></span>
+              <span class="mono">Decimals: <span class="text-cyan-400">3.14</span></span>
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full"></span>
+              <span class="mono">Fractions: <span class="text-cyan-400">3/4</span></span>
+            </li>
+            <li class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 bg-cyan-400 rounded-full"></span>
+              <span class="mono">Complex: <span class="text-cyan-400">5.5/2</span></span>
+            </li>
+          </ul>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="max-w-7xl mx-auto mt-12 pt-8 border-t border-gray-800 text-center text-gray-500 text-sm mono">
+      <p>QUANTUM CONVERSION ENGINE // BUILT WITH THREE.JS & WEBGL</p>
+      <p class="mt-2 text-xs">No AI was harmed in the making of this interface</p>
+    </footer>
+  </div>
+
+  <script>
+    // Custom Cursor
+    const cursor = document.getElementById('cursor');
+    const cursorDot = document.getElementById('cursor-dot');
+    document.addEventListener('mousemove', (e) => {
+      cursor.style.left = e.clientX - 10 + 'px';
+      cursor.style.top = e.clientY - 10 + 'px';
+      cursorDot.style.left = e.clientX - 2 + 'px';
+      cursorDot.style.top = e.clientY - 2 + 'px';
+    });
+    document.addEventListener('mousedown', () => {
+      cursor.style.transform = 'scale(0.8)';
+    });
+    document.addEventListener('mouseup', () => {
+      cursor.style.transform = 'scale(1)';
+    });
+    // Three.js Background
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('canvas-container').appendChild(renderer.domElement);
+    // Create particles
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlesCount = 1500;
+    const posArray = new Float32Array(particlesCount * 3);
+    for (let i = 0; i < particlesCount * 3; i++) {
+      posArray[i] = (Math.random() - 0.5) * 50;
+    }
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    const particlesMaterial = new THREE.PointsMaterial({
+      size: 0.02,
+      color: 0x00f3ff,
+      transparent: true,
+      opacity: 0.8,
+      blending: THREE.AdditiveBlending
+    });
+    const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particlesMesh);
+    // Add wireframe sphere
+    const sphereGeometry = new THREE.IcosahedronGeometry(10, 2);
+    const sphereMaterial = new THREE.MeshBasicMaterial({
+      color: 0xbc13fe,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.1
+    });
+    const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    scene.add(sphere);
+    camera.position.z = 30;
+    // Mouse interaction
+    let mouseX = 0;
+    let mouseY = 0;
+    document.addEventListener('mousemove', (event) => {
+      mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+    });
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      particlesMesh.rotation.x += 0.0005;
+      particlesMesh.rotation.y += 0.0005;
+      sphere.rotation.x += 0.001;
+      sphere.rotation.y += 0.002;
+      // Mouse follow
+      particlesMesh.rotation.x += mouseY * 0.0005;
+      particlesMesh.rotation.y += mouseX * 0.0005;
+      renderer.render(scene, camera);
+    }
+    animate();
+    // Resize handler
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    // Particle burst effect
+    function createParticleBurst(x, y) {
+      for (let i = 0; i < 12; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        particle.style.width = Math.random() * 6 + 2 + 'px';
+        particle.style.height = particle.style.width;
+        const angle = (Math.PI * 2 * i) / 12;
+        const velocity = 100 + Math.random() * 100;
+        particle.style.setProperty('--tx', Math.cos(angle) * velocity + 'px');
+        particle.style.setProperty('--ty', Math.sin(angle) * velocity + 'px');
+        document.body.appendChild(particle);
+        setTimeout(() => particle.remove(), 3000);
+      }
+    }
+    // Converter Logic
+    const ConvertHandler = {
+      units: {
+        volume: {
+          gal: {
+            name: 'gallons',
+            return: 'L',
+            factor: 3.78541
+          },
+          L: {
+            name: 'liters',
+            return: 'gal',
+            factor: 1 / 3.78541
+          }
+        },
+        mass: {
+          lbs: {
+            name: 'pounds',
+            return: 'kg',
+            factor: 0.453592
+          },
+          kg: {
+            name: 'kilograms',
+            return: 'lbs',
+            factor: 1 / 0.453592
+          }
+        },
+        length: {
+          mi: {
+            name: 'miles',
+            return: 'km',
+            factor: 1.60934
+          },
+          km: {
+            name: 'kilometers',
+            return: 'mi',
+            factor: 1 / 1.60934
+          }
+        }
+      },
+      getNum(input) {
+        const numMatch = input.match(/^[\d./]+/);
+        if (!numMatch) return 1;
+        const numStr = numMatch[0];
+        const slashCount = (numStr.match(/\//g) || []).length;
+        if (slashCount > 1) return 'invalid number';
+        if (slashCount === 1) {
+          const [num, den] = numStr.split('/');
+          const result = parseFloat(num) / parseFloat(den);
+          return isNaN(result) || !isFinite(result) ? 'invalid number' : result;
+        }
+        const result = parseFloat(numStr);
+        return isNaN(result) ? 'invalid number' : result;
+      },
+      getUnit(input) {
+        const unitMatch = input.match(/[a-zA-Z]+$/);
+        if (!unitMatch) return 'invalid unit';
+        const unit = unitMatch[0];
+        const allUnits = ['gal', 'L', 'lbs', 'kg', 'mi', 'km'];
+        const lowerUnit = unit.toLowerCase();
+        if (lowerUnit === 'l') return 'L';
+        if (allUnits.includes(lowerUnit)) return lowerUnit;
+        return 'invalid unit';
+      },
+      getReturnUnit(initUnit) {
+        for (let cat in this.units) {
+          if (this.units[cat][initUnit]) {
+            return this.units[cat][initUnit].return;
+          }
+        }
+        return null;
+      },
+      spellOutUnit(unit) {
+        for (let cat in this.units) {
+          if (this.units[cat][unit]) {
+            return this.units[cat][unit].name;
+          }
+        }
+        return '';
+      },
+      convert(initNum, initUnit) {
+        for (let cat in this.units) {
+          if (this.units[cat][initUnit]) {
+            const result = initNum * this.units[cat][initUnit].factor;
+            return parseFloat(result.toFixed(5));
+          }
+        }
+        return null;
+      },
+      getString(initNum, initUnit, returnNum, returnUnit) {
+        return `${initNum} ${this.spellOutUnit(initUnit)} converts to ${returnNum} ${this.spellOutUnit(returnUnit)}`;
+      }
+    };
+    // UI Logic
+    const categoryTabs = document.getElementById('categoryTabs');
+    const inputUnit = document.getElementById('inputUnit');
+    const inputValue = document.getElementById('inputValue');
+    const convertBtn = document.getElementById('convertBtn');
+    const resultContainer = document.getElementById('resultContainer');
+    const errorContainer = document.getElementById('errorContainer');
+    const quickConversions = document.getElementById('quickConversions');
+    let currentCategory = 'volume';
+    let conversionHistory = [];
+    const unitOptions = {
+      volume: [{
+          value: 'gal',
+          label: 'Gallons (gal)'
+        },
+        {
+          value: 'L',
+          label: 'Liters (L)'
+        }
+      ],
+      mass: [{
+          value: 'lbs',
+          label: 'Pounds (lbs)'
+        },
+        {
+          value: 'kg',
+          label: 'Kilograms (kg)'
+        }
+      ],
+      length: [{
+          value: 'mi',
+          label: 'Miles (mi)'
+        },
+        {
+          value: 'km',
+          label: 'Kilometers (km)'
+        }
+      ]
+    };
+    categoryTabs.addEventListener('click', (e) => {
+      if (e.target.classList.contains('tab-btn')) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+        currentCategory = e.target.dataset.category;
+        updateUnitOptions();
+        updateQuickConversions();
+      }
+    });
+
+    function updateUnitOptions() {
+      inputUnit.innerHTML = unitOptions[currentCategory].map(opt =>
+        `<option value="${opt.value}">${opt.label}</option>`
+      ).join('');
+    }
+
+    function updateQuickConversions() {
+      const examples = [{
+          val: '1',
+          unit: unitOptions[currentCategory][0].value
+        },
+        {
+          val: '10',
+          unit: unitOptions[currentCategory][0].value
+        },
+        {
+          val: '3.5',
+          unit: unitOptions[currentCategory][1].value
+        },
+        {
+          val: '1/2',
+          unit: unitOptions[currentCategory][0].value
+        }
+      ];
+      quickConversions.innerHTML = examples.map(ex => `
+                <div class="unit-card glass-panel p-4 rounded-lg cursor-pointer" onclick="quickConvert('${ex.val}', '${ex.unit}')">
+                    <div class="mono text-xs text-gray-400 mb-1">EXAMPLE</div>
+                    <div class="text-lg font-bold text-cyan-400">${ex.val}${ex.unit}</div>
+                    <div class="text-xs text-gray-500 mt-2">Click to convert</div>
+                </div>
+            `).join('');
+    }
+
+    function quickConvert(val, unit) {
+      inputValue.value = val;
+      inputUnit.value = unit;
+      performConversion();
+    }
+    convertBtn.addEventListener('click', (e) => {
+      createParticleBurst(e.clientX, e.clientY);
+      performConversion();
+    });
+    inputValue.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') performConversion();
+    });
+
+    function performConversion() {
+      const input = inputValue.value + inputUnit.value;
+      const startTime = performance.now();
+      const initNum = ConvertHandler.getNum(input);
+      const initUnit = ConvertHandler.getUnit(input);
+      errorContainer.classList.add('hidden');
+      resultContainer.classList.add('hidden');
+      if (initNum === 'invalid number' && initUnit === 'invalid unit') {
+        showError('invalid number and unit');
+        return;
+      }
+      if (initNum === 'invalid number') {
+        showError('invalid number');
+        return;
+      }
+      if (initUnit === 'invalid unit') {
+        showError('invalid unit');
+        return;
+      }
+      const returnNum = ConvertHandler.convert(initNum, initUnit);
+      const returnUnit = ConvertHandler.getReturnUnit(initUnit);
+      const string = ConvertHandler.getString(initNum, initUnit, returnNum, returnUnit);
+      document.getElementById('resultInit').textContent = `${initNum} ${initUnit}`;
+      document.getElementById('resultOutput').textContent = `${returnNum} ${returnUnit}`;
+      document.getElementById('resultString').textContent = string;
+      resultContainer.classList.remove('hidden');
+      const latency = Math.round(performance.now() - startTime);
+      document.getElementById('latency').textContent = latency + 'ms';
+      window.lastResult = {
+        initNum,
+        initUnit,
+        returnNum,
+        returnUnit,
+        string
+      };
+    }
+
+    function showError(msg) {
+      document.getElementById('errorText').textContent = msg;
+      errorContainer.classList.remove('hidden');
+    }
+
+    function copyResult() {
+      if (!window.lastResult) return;
+      navigator.clipboard.writeText(JSON.stringify(window.lastResult, null, 2));
+      const btn = event.target;
+      const original = btn.textContent;
+      btn.textContent = 'COPIED!';
+      setTimeout(() => btn.textContent = original, 2000);
+    }
+
+    function saveToHistory() {
+      if (!window.lastResult) return;
+      conversionHistory.unshift({
+        ...window.lastResult,
+        timestamp: new Date().toLocaleTimeString()
+      });
+      updateHistory();
+    }
+
+    function updateHistory() {
+      const list = document.getElementById('historyList');
+      if (conversionHistory.length === 0) {
+        list.innerHTML = '<div class="text-gray-500 text-center py-8 italic">No conversions recorded</div>';
+        return;
+      }
+      list.innerHTML = conversionHistory.slice(0, 10).map((item, i) => `
+                <div class="history-item glass-panel p-3 rounded border-l-2 border-cyan-500">
+                    <div class="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>${item.timestamp}</span>
+                        <span class="text-cyan-400">#${conversionHistory.length - i}</span>
+                    </div>
+                    <div class="text-sm">${item.initNum}${item.initUnit} → ${item.returnNum}${item.returnUnit}</div>
+                </div>
+            `).join('');
+    }
+    // Initialize
+    updateUnitOptions();
+    updateQuickConversions();
+    // Random glitch effect on title
+    setInterval(() => {
+      const title = document.querySelector('.glitch');
+      if (Math.random() > 0.95) {
+        title.style.animation = 'none';
+        setTimeout(() => {
+          title.style.animation = '';
+        }, 100);
+      }
+    }, 2000);
+  </script>
+</body>
+
+</html>
