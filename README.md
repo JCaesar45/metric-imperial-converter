@@ -1,4 +1,3 @@
-```
 # Metric-Imperial Converter 🌍➡️🛢️
 
 **A full-stack JavaScript application that seamlessly converts between Metric and Imperial units — because life’s too short to do manual conversions!**
@@ -37,7 +36,7 @@ Imagine a world where you can effortlessly switch between gallons and liters, mi
 ### Clone the repo
 
 ```bash
-git clone https://github.com/your-github-username/metric-imperial-converter.git
+git clone https://github.com/JCaesar45/metric-imperial-converter.git
 cd metric-imperial-converter
 ``
 
